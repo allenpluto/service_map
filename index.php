@@ -10,21 +10,29 @@
     $query->execute();
     $line_fetch = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    $canvas_size = 1000;    //canvas width in px
+    $sql = 'SELECT * FROM tbl_entity_stop ORDER BY line_id, line_position';
+    $query = $db->prepare($sql);
+    $query->execute();
+    $stop_fetch = $query->fetchAll(PDO::FETCH_ASSOC);
+
+    $canvas_size = 1600;    //canvas width in px
     $canvas_ratio = 1.25;   //canvas width/height
     $curve_size = 0.025;
     $stroke_width = 0.004;
+    $circle_radius = 0.006;
 
-    $line_name_font_size = $canvas_size*0.008;
+    $line_name_font_size = 0.008;
+    $stop_name_font_size = 0.008;
+    $junction_stop_name_font_size = 0.01;
 
     function get_path_point($path_value)
     {
         return round($path_value*$GLOBALS['canvas_size'],2);
     }
 
-    $line_json = [];
+    $line_set = [];
     foreach ($line_fetch as $line_fetch_row) {
-        $line_json_row = [
+        $line_row = [
             'name'=>$line_fetch_row['name'],
             'alternate_name'=>$line_fetch_row['alternate_name'],
             'color'=>json_decode($line_fetch_row['color'],true),
@@ -34,25 +42,25 @@
         $path_length_set = [];
         $path_d = '';
         $previous_endpoint = [0,0];
-        $path_endpoint_count = count($line_json_row['path']);
-        foreach ($line_json_row['path'] as $path_endpoint_index=>$path_endpoint)
+        $path_endpoint_count = count($line_row['path']);
+        foreach ($line_row['path'] as $path_endpoint_index=>$path_endpoint)
         {
             if ($path_endpoint_index == 0)
             {
                 $path_d = 'M'.get_path_point($path_endpoint[0]).' '.get_path_point($path_endpoint[1]);
                 continue;
             }
-            $path_length = sqrt(pow($path_endpoint[0]-$line_json_row['path'][$path_endpoint_index-1][0],2)+pow($path_endpoint[1]-$line_json_row['path'][$path_endpoint_index-1][1],2));
+            $path_length = sqrt(pow($path_endpoint[0]-$line_row['path'][$path_endpoint_index-1][0],2)+pow($path_endpoint[1]-$line_row['path'][$path_endpoint_index-1][1],2));
             $path_length_set[] = $path_length;
             if ($path_length > $curve_size*2)
             {
                 if ($path_endpoint_index > 1)
                 {
-                    $path_d .= get_path_point($curve_size/$path_length*$path_endpoint[0]+(1-$curve_size/$path_length)*$line_json_row['path'][$path_endpoint_index-1][0]).' '.get_path_point($curve_size/$path_length*$path_endpoint[1]+(1-$curve_size/$path_length)*$line_json_row['path'][$path_endpoint_index-1][1]);
+                    $path_d .= get_path_point($curve_size/$path_length*$path_endpoint[0]+(1-$curve_size/$path_length)*$line_row['path'][$path_endpoint_index-1][0]).' '.get_path_point($curve_size/$path_length*$path_endpoint[1]+(1-$curve_size/$path_length)*$line_row['path'][$path_endpoint_index-1][1]);
                 }
                 if ($path_endpoint_index < $path_endpoint_count-1)
                 {
-                    $path_d .= ' L'.get_path_point($curve_size/$path_length*$line_json_row['path'][$path_endpoint_index-1][0]+(1-$curve_size/$path_length)*$path_endpoint[0]).' '.get_path_point($curve_size/$path_length*$line_json_row['path'][$path_endpoint_index-1][1]+(1-$curve_size/$path_length)*$path_endpoint[1]);
+                    $path_d .= ' L'.get_path_point($curve_size/$path_length*$line_row['path'][$path_endpoint_index-1][0]+(1-$curve_size/$path_length)*$path_endpoint[0]).' '.get_path_point($curve_size/$path_length*$line_row['path'][$path_endpoint_index-1][1]+(1-$curve_size/$path_length)*$path_endpoint[1]);
                     $path_d .= ' C'.get_path_point($path_endpoint[0]).' '.get_path_point($path_endpoint[1]).', '.get_path_point($path_endpoint[0]).' '.get_path_point($path_endpoint[1]).', ';
                 }
                 else
@@ -64,7 +72,7 @@
             {
                 if ($path_endpoint_index > 1)
                 {
-                    $path_d .= get_path_point(0.5*$line_json_row['path'][$path_endpoint_index-1][0]+0.5*$path_endpoint[0]).' '.get_path_point(0.5*$line_json_row['path'][$path_endpoint_index-1][1]+0.5*$path_endpoint[1]);
+                    $path_d .= get_path_point(0.5*$line_row['path'][$path_endpoint_index-1][0]+0.5*$path_endpoint[0]).' '.get_path_point(0.5*$line_row['path'][$path_endpoint_index-1][1]+0.5*$path_endpoint[1]);
                 }
                 if ($path_endpoint_index < $path_endpoint_count-1)
                 {
@@ -76,8 +84,60 @@
                 }
             }
         }
-        $line_json_row['d'] = $path_d;
-        $line_json[] = $line_json_row;
+        $line_row['d'] = $path_d;
+        $line_set[$line_fetch_row['id']] = $line_row;
+    }
+
+    $stop_set = [];
+    $junction_set = [];
+    foreach ($stop_fetch as $stop_fetch_row)
+    {
+        $stop_row = [
+            'name'=>$stop_fetch_row['name'],
+            'description'=>$stop_fetch_row['description'],
+            'line_id'=>$stop_fetch_row['line_id'],
+            'junction_id'=>$stop_fetch_row['junction_id'],
+            'cx'=>get_path_point($stop_fetch_row['point_x']),
+            'cy'=>get_path_point($stop_fetch_row['point_y']),
+            'text_location'=>''
+        ];
+
+        if ($stop_fetch_row['text_x'] != 0)
+        {
+            $stop_row['text_location'] .= 'margin-left:0;';
+        }
+        else
+        {
+            $stop_row['text_location'] .= 'text-align:center;';
+        }
+        if ($stop_fetch_row['text_x'] >= 0)
+        {
+            $stop_row['text_location'] .= 'left:'.get_path_point($stop_fetch_row['point_x']+$stop_fetch_row['text_x']).'px;';
+        }
+        else
+        {
+            $stop_row['text_location'] .= 'right:'.get_path_point(1-$stop_fetch_row['point_x']-$stop_fetch_row['text_x']).'px;text-align:right;';
+        }
+
+        if ($stop_fetch_row['text_y'] != 0)
+        {
+            $stop_row['text_location'] .= 'margin-top:0;';
+        }
+        if ($stop_fetch_row['text_y'] >= 0)
+        {
+            $stop_row['text_location'] .= 'top:'.get_path_point($stop_fetch_row['point_y']+$stop_fetch_row['text_y']).'px;';
+        }
+        else
+        {
+            $stop_row['text_location'] .= 'bottom:'.get_path_point(1/$canvas_ratio-$stop_fetch_row['point_y']-$stop_fetch_row['text_y']).'px;';
+        }
+
+        $stop_set[$stop_fetch_row['id']] = $stop_row;
+
+        if ($stop_fetch_row['junction_id'] > 0)
+        {
+            $junction_set[$stop_fetch_row['junction_id']][$stop_fetch_row['junction_position']] = $stop_row;
+        }
     }
 
 ?><!DOCTYPE html>
@@ -129,13 +189,11 @@
         border-radius: 0.4em;
 
         color: #ffffff;
-        font-size: <?=$line_name_font_size?>px;
+        font-size: <?=$line_name_font_size*$canvas_size?>px;
         text-align: center;
         text-transform: uppercase;
 
         cursor: pointer;
-
-        opacity: 0;
 
         -webkit-transition:opacity 500ms ease;
         -moz-transition:opacity 500ms ease;
@@ -151,6 +209,49 @@
         width: 6em;
         height: 3em;
         vertical-align: middle;
+    }
+    .stop_name_container
+    {
+        display:block;
+        position: absolute;
+        margin: -1.25em 0 0 -3.5em;
+
+        border-radius: 0.4em;
+
+        font-size: <?=$stop_name_font_size*$canvas_size?>px;
+        text-transform: capitalize;
+
+        -webkit-transition:opacity 500ms ease;
+        -moz-transition:opacity 500ms ease;
+        -ms-transition:opacity 500ms ease;
+        -o-transition:opacity 500ms ease;
+        transition:opacity 500ms ease;
+
+        z-index: 110;
+    }
+    .stop_name
+    {
+        display: table-cell;
+        width: 7em;
+        height: 2.5em;
+        vertical-align: middle;
+    }
+<?php
+    foreach($line_set as $line_row_index=>$line_row)
+    {
+        echo PHP_EOL.'.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo PHP_EOL.'.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+    }
+?>
+    .stop_name_container.junction_stop_name_container
+    {
+        margin-left:-2.5em;
+        color: black;
+        font-size: <?=$junction_stop_name_font_size*$canvas_size?>px;
+    }
+    .stop_name_container.junction_stop_name_container .stop_name
+    {
+        width: 5em;
     }
 </style>
 <!--<svg width="1800" height="1500" xmlns="http://www.w3.org/2000/svg" fill="transparent">-->
@@ -169,8 +270,47 @@
 <!--</svg>-->
 <!--<canvas id="canvas_bg" width="--><?//=$canvas_size?><!--" height="--><?//=round($canvas_size/$canvas_ratio,0)?><!--"></canvas>-->
 <div class="svg_drawing_container">
-    <svg class="svg_drawing" xmlns="http://www.w3.org/2000/svg" fill="transparent"></svg>
-    <div class="svg_mask"></div>
+    <svg class="svg_drawing" xmlns="http://www.w3.org/2000/svg" fill="transparent">
+<?php
+    // Draw Line
+    foreach($line_set as $line_row_index=>$line_row)
+    {
+        echo PHP_EOL.'<path class="line_'.$line_row_index.'" stroke="rgb('.implode(',',$line_row['color']).')" stroke-width="'.$canvas_size*$stroke_width.'" d="'.$line_row['d'].'" />'.PHP_EOL;
+    }
+    // Draw Stop Circles
+    foreach($stop_set as $stop_row_index=>$stop_row)
+    {
+        if ($stop_row['junction_id'] == 0)
+        {
+            echo PHP_EOL.'<circle class="line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.$canvas_size*$stroke_width.'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.$canvas_size*$circle_radius.'" />'.PHP_EOL;
+        }
+    }
+?>
+    </svg>
+    <div class="svg_mask">
+<?php
+    // Draw Line
+    foreach($line_set as $line_row_index=>$line_row)
+    {
+        if (!empty($line_row['name']))
+        {
+            echo PHP_EOL.'<div class="line_name_container line_'.$line_row_index.'" style="background: rgb('.implode(',',$line_row['color']).'); top: '.get_path_point($line_row['path'][0][1]).'px; left: '.get_path_point($line_row['path'][0][0]).'px;"><div class="line_name">'.$line_row['name'].'</div></div>'.PHP_EOL;
+        }
+        if (!empty($line_row['alternate_name']))
+        {
+            echo PHP_EOL.'<div class="line_name_container end_line_name_container line_'.$line_row_index.'" style="background: rgb('.implode(',',$line_row['color']).'); top: '.get_path_point(end($line_row['path'])[1]).'px; left: '.get_path_point(end($line_row['path'])[0]).'px;"><div class="line_name">'.$line_row['alternate_name'].'</div></div>'.PHP_EOL;
+        }
+    }
+    foreach($stop_set as $stop_row_index=>$stop_row)
+    {
+        if (!empty($stop_row['name']))
+        {
+            echo PHP_EOL.'<div class="stop_name_container line_'.$stop_row['line_id'].($stop_row['junction_id']>0?' junction_stop_name_container':'').'" style="'.$stop_row['text_location'].'"><div class="stop_name">'.$stop_row['name'].'</div></div>'.PHP_EOL;
+        }
+    }
+
+?>
+    </div>
 </div>
 <table id="point_table">
 </table>
@@ -182,61 +322,50 @@ console.log($('#canvas_bg').offset());
         $('#point_table').append('<tr><td>'+(event.pageX-$('.svg_drawing_container').offset().left)+'</td><td>'+(event.pageY-$('.svg_drawing_container').offset().top)+'</td></tr>')
     });
     $(document).ready(function(){
-//        var canvas = $('#canvas_bg')[0];
-//        var ctx = canvas.getContext('2d');
-//        var bg_img = new Image();
-
-        // from database
-        var line_set = <?=json_encode($line_json)?>;
-        line_set.forEach(function(line, index){
-            var d = '';
-            line.path.forEach(function(turning_point){
-                if (!d)
-                {
-                    d = 'M'+turning_point[0]*svg_width+' '+turning_point[1]*svg_width
-                }
-                else
-                {
-                    d += ' L'+turning_point[0]*svg_width+' '+turning_point[1]*svg_width
-                }
-            });
-            $('.svg_drawing')[0].innerHTML += '<path class="line_'+index+'" stroke="rgba('+line.color.join()+',1)" stroke-width="<?=$canvas_size*$stroke_width?>" d="'+line.d+'" />';
-            if (line.name)
-            {
-                var line_name_temp = $('<div />',{
-                    'class':'line_name_container line_'+index
-                }).css({
-                    'background':'rgba('+line.color.join()+',1)'
-                }).html('<div class="line_name">'+line.name+'</div>');
-                line_name_temp.appendTo('.svg_mask').css({
-                    'top':Math.floor(line.path[0][1]*svg_width),
-                    'left':Math.floor(line.path[0][0]*svg_width),
-                    'opacity':1
-                });
-            }
-            if (line.alternate_name)
-            {
-                var line_name_temp = $('<div />',{
-                    'class':'line_name_container line_name_end line_'+index
-                }).css({
-                    'background':'rgba('+line.color.join()+',1)'
-                }).html('<div class="line_name">'+line.alternate_name+'</div>');
-                line_name_temp.appendTo('.svg_mask').css({
-                    'top':Math.floor(line.path[line.path.length-1][1]*svg_width),
-                    'left':Math.floor(line.path[line.path.length-1][0]*svg_width),
-                    'opacity':1
-                });
-            }
-
-        });
-
-//        bg_img.width = <?//=$canvas_size?>//;
-//        bg_img.height = <?//=round($canvas_size/$canvas_ratio,0)?>//;
-//        bg_img.src = 'background.jpg';
+//        // from database
+//        var line_set = <?//=json_encode($line_set)?>//;
+//        line_set.forEach(function(line, index){
+//            var d = '';
+//            line.path.forEach(function(turning_point){
+//                if (!d)
+//                {
+//                    d = 'M'+turning_point[0]*svg_width+' '+turning_point[1]*svg_width
+//                }
+//                else
+//                {
+//                    d += ' L'+turning_point[0]*svg_width+' '+turning_point[1]*svg_width
+//                }
+//            });
+//            $('.svg_drawing')[0].innerHTML += '<path class="line_'+index+'" stroke="rgba('+line.color.join()+',1)" stroke-width="<?//=$canvas_size*$stroke_width?>//" d="'+line.d+'" />';
+//            if (line.name)
+//            {
+//                var line_name_temp = $('<div />',{
+//                    'class':'line_name_container line_'+index
+//                }).css({
+//                    'background':'rgba('+line.color.join()+',1)'
+//                }).html('<div class="line_name">'+line.name+'</div>');
+//                line_name_temp.appendTo('.svg_mask').css({
+//                    'top':Math.floor(line.path[0][1]*svg_width),
+//                    'left':Math.floor(line.path[0][0]*svg_width),
+//                    'opacity':1
+//                });
+//            }
+//            if (line.alternate_name)
+//            {
+//                var line_name_temp = $('<div />',{
+//                    'class':'line_name_container line_name_end line_'+index
+//                }).css({
+//                    'background':'rgba('+line.color.join()+',1)'
+//                }).html('<div class="line_name">'+line.alternate_name+'</div>');
+//                line_name_temp.appendTo('.svg_mask').css({
+//                    'top':Math.floor(line.path[line.path.length-1][1]*svg_width),
+//                    'left':Math.floor(line.path[line.path.length-1][0]*svg_width),
+//                    'opacity':1
+//                });
+//            }
 //
-//        bg_img.onload = function(){
-//            ctx.drawImage(bg_img,0, 0,bg_img.width, bg_img.height);
-//        };
+//        });
+
     });
 </script>
 </body>
