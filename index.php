@@ -15,7 +15,7 @@
     $query->execute();
     $stop_fetch = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    $canvas_size = 1600;    //canvas width in px
+    $canvas_size = 1000;    //canvas width in px
     $canvas_ratio = 1.25;   //canvas width/height
     $curve_size = 0.025;
     $stroke_width = 0.004;
@@ -123,20 +123,53 @@
         {
             $stop_row['text_location'] .= 'margin-top:0;';
         }
+        else
+        {
+            $stop_row['text_location'] .= 'vertical-align:middle;';
+        }
         if ($stop_fetch_row['text_y'] >= 0)
         {
             $stop_row['text_location'] .= 'top:'.get_path_point($stop_fetch_row['point_y']+$stop_fetch_row['text_y']).'px;';
         }
         else
         {
-            $stop_row['text_location'] .= 'bottom:'.get_path_point(1/$canvas_ratio-$stop_fetch_row['point_y']-$stop_fetch_row['text_y']).'px;';
+            $stop_row['text_location'] .= 'bottom:'.get_path_point(1/$canvas_ratio-$stop_fetch_row['point_y']-$stop_fetch_row['text_y']).'px;vertical-align:bottom;';
         }
 
         $stop_set[$stop_fetch_row['id']] = $stop_row;
 
         if ($stop_fetch_row['junction_id'] > 0)
         {
-            $junction_set[$stop_fetch_row['junction_id']][$stop_fetch_row['junction_position']] = $stop_row;
+            $junction_set[$stop_fetch_row['junction_id']]['stop'][$stop_fetch_row['junction_position']] = $stop_row;
+        }
+    }
+    foreach($junction_set as $junction_row_index=>&$junction_row)
+    {
+        ksort($junction_row['stop']);
+        $junction_row['center'] = [];
+        foreach($junction_row['stop'] as $junction_stop_index=>$junction_stop)
+        {
+            $center_point = ['x'=>$junction_stop['cx'],'y'=>$junction_stop['cy']];
+            if ($junction_stop_index > 0)
+            {
+                if ($center_point['x'] == end($junction_row['center'])['x'] AND $center_point['y'] == end($junction_row['center'])['y'])
+                {
+                    continue;
+                }
+                if (count($junction_row['center']) > 2)
+                {
+                    // If previous point on the path from second but last point to new point, then remove the last point
+                    if (($center_point['y'] == end($junction_row['center'])['y'] AND $center_point['y'] == $junction_row['center'][lenth($junction_row['center'])-2]['y']) OR ($center_point['x']-$junction_row['center'][lenth($junction_row['center'])-2]['x'])/($center_point['y']-$junction_row['center'][lenth($junction_row['center'])-2]['y']) == ($center_point['x']-end($junction_row['center'])['x'])/($center_point['y']-end($junction_row['center'])['y']))
+                    {
+                        array_pop($junction_row['center']);
+                    }
+                }
+            }
+            $junction_row['center'][] = $center_point;
+        }
+        if (count($junction_row['center']) > 1)
+        {
+
         }
     }
 
@@ -158,15 +191,15 @@
     {
         display: inline-block;
         position: relative;
-        background: url("background.jpg");
-        background-size: cover;
+        /*background: url("background.jpg");*/
+        /*background-size: cover;*/
     }
     .svg_drawing
     {
         width: <?=$canvas_size?>px;
         height: <?=round($canvas_size/$canvas_ratio,0)?>px;
 
-        background: rgba(255,255,255,0.3);
+        /*background: rgba(255,255,255,0.3);*/
     }
     .svg_mask
     {
@@ -234,7 +267,7 @@
         display: table-cell;
         width: 7em;
         height: 2.5em;
-        vertical-align: middle;
+        vertical-align: inherit;
     }
 <?php
     foreach($line_set as $line_row_index=>$line_row)
@@ -283,6 +316,18 @@
         if ($stop_row['junction_id'] == 0)
         {
             echo PHP_EOL.'<circle class="line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.$canvas_size*$stroke_width.'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.$canvas_size*$circle_radius.'" />'.PHP_EOL;
+        }
+    }
+    foreach($junction_set as $junction_row_index=>$junction_row)
+    {
+        $line_class = '';
+        foreach($junction_row['stop'] as $junction_stop)
+        {
+            $line_class .= ' line_'.$junction_stop['line_id'];
+        }
+        if (count($junction_row['center']) == 1)
+        {
+            echo PHP_EOL.'<circle class="'.$line_class.'" stroke="black" stroke-width="'.$canvas_size*$stroke_width.'" fill="white" cx="'.end($junction_row['center'])['x'].'" cy="'.end($junction_row['center'])['y'].'" r="'.$canvas_size*$circle_radius.'" />'.PHP_EOL;
         }
     }
 ?>
