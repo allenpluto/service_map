@@ -26,6 +26,8 @@
     $stop_name_font_size = 0.8;
     $junction_stop_name_font_size = 1;
 
+    $stop_description_container_width = 20;
+
     function get_path_point($path_value)
     {
         return round($path_value*$GLOBALS['canvas_size'],2);
@@ -140,6 +142,8 @@
         {
             $stop_row['text_location'] .= 'bottom:'.((1/$canvas_ratio-$stop_fetch_row['point_y']-$stop_fetch_row['text_y'])*100*$canvas_ratio).'%;vertical-align:bottom;';
         }
+        $stop_row['description_location'] =  'left:'.($stop_fetch_row['point_x']*100).'%;bottom:'.((1/$canvas_ratio-$stop_fetch_row['point_y']+$circle_radius*2)*100*$canvas_ratio).'%';
+
 
         $stop_set[$stop_fetch_row['id']] = $stop_row;
         $line_set[$stop_fetch_row['line_id']]['stop'][$stop_fetch_row['line_position']] = $stop_row;
@@ -158,12 +162,14 @@
         $junction_row['text_location'] = $junction_row['stop'][0]['text_location'];
         $junction_row['cx'] = $junction_row['stop'][0]['cx'];
         $junction_row['cy'] = $junction_row['stop'][0]['cy'];
+        $junction_row['stop_id'] = [];
         $junction_row['line_id'] = [];
 
         $center_point_set = [];
         foreach($junction_row['stop'] as $junction_stop_index=>$junction_stop)
         {
             $junction_row['line_id'][] = $junction_stop['line_id'];
+            $junction_row['stop_id'][] = $junction_stop['id'];
             $center_point = ['x'=>$junction_stop['x'],'y'=>$junction_stop['y']];
             if ($junction_stop_index > 0)
             {
@@ -260,15 +266,23 @@
         width: <?=$canvas_size/10?>em;
         height: <?=round($canvas_size/$canvas_ratio/10,0)?>em;
 
-        /*background: rgba(255,255,255,0.3);*/
+        background: #ffffff;
     }
     .svg_drawing_container_animation_active .svg_drawing > *
     {
         opacity: 0.2;
     }
-    .svg_drawing_container_animation_active .svg_drawing .line_animation_active
+    .line_stop
     {
-        opacity: 1;
+        cursor: pointer;
+    }
+    .line_stop:hover
+    {
+        fill: rgb(240,88,39)
+    }
+    .line_stop_highlight
+    {
+        fill: rgb(236,30,43);
     }
     .line_name_container
     {
@@ -312,6 +326,8 @@
         font-size: <?=$stop_name_font_size?>em;
         text-transform: capitalize;
 
+        cursor: pointer;
+
         vertical-align:top;
 
         -webkit-transition:opacity 500ms ease;
@@ -333,10 +349,6 @@
     .svg_drawing_container_animation_active .stop_name_container
     {
         opacity: 0.2;
-    }
-    .svg_drawing_container_animation_active .line_animation_active
-    {
-        opacity: 1;
     }
     .line_legendary_container
     {
@@ -370,9 +382,11 @@
 <?php
     foreach($line_set as $line_row_index=>$line_row)
     {
-        echo PHP_EOL.'.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo PHP_EOL.'.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo PHP_EOL.'#line_legendary_'.$line_row_index.' {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '#line_legendary_'.$line_row_index.' {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .svg_drawing .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
     }
 ?>
     .stop_name_container.junction_stop_name_container
@@ -385,6 +399,84 @@
     .stop_name_container.junction_stop_name_container .stop_name
     {
         width: 5em;
+    }
+    .stop_description_container
+    {
+        display: block;
+        position: absolute;
+        margin-left: -<?=$stop_description_container_width/2?>em;
+
+        opacity: 0;
+        z-index: -1;
+
+        -webkit-transition:opacity 500ms ease;
+        -moz-transition:opacity 500ms ease;
+        -ms-transition:opacity 500ms ease;
+        -o-transition:opacity 500ms ease;
+        transition:opacity 500ms ease;
+    }
+
+    .stop_description_container.show_description
+    {
+        opacity: 1;
+        z-index: 200;
+    }
+
+    .stop_description
+    {
+        display: block;
+        width: <?=$stop_description_container_width?>em;
+        position: relative;
+        padding: 0.5em 1em;
+
+        background: #eeeeee;
+
+        border: 2px solid #cccccc;
+        border-radius: 1em;
+
+        box-sizing: border-box;
+    }
+    .stop_description:before,
+    .stop_description:after
+    {
+        display: block;
+        width: 0;
+        height: 0;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+
+        margin-left: -<?=get_path_point(2*$circle_radius)?>px;
+
+        border: <?=get_path_point(2*$circle_radius)?>px solid transparent;
+
+        content: ' ';
+
+        z-index: 220;
+    }
+
+    .stop_description:before
+    {
+        margin-top: 2px;
+        border-top-color: #cccccc;
+    }
+
+    .stop_description:after
+    {
+        border-top-color: #eeeeee;
+    }
+
+    .stop_description_title
+    {
+        padding-bottom: 0.5em;
+
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    .stop_description_content > *
+    {
+        margin: 0 0 0.5em 0;
     }
 </style>
 <!--<svg width="1800" height="1500" xmlns="http://www.w3.org/2000/svg" fill="transparent">-->
@@ -416,7 +508,7 @@
     {
         if ($stop_row['junction_id'] == 0)
         {
-            echo PHP_EOL.'<circle class="line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" />'.PHP_EOL;
+            echo PHP_EOL.'<circle class="line_stop line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'" />'.PHP_EOL;
         }
     }
     foreach($junction_set as $junction_row_index=>$junction_row)
@@ -424,11 +516,11 @@
         $line_class = 'line_'.implode(' line_',$junction_row['line_id']);
         if (empty($junction_row['d']))
         {
-            echo PHP_EOL.'<circle class="'.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" />'.PHP_EOL;
+            echo PHP_EOL.'<circle class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
         else
         {
-            echo PHP_EOL.'<path class="'.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white"  d="'.$junction_row['d'].'" />'.PHP_EOL;
+            echo PHP_EOL.'<path class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white"  d="'.$junction_row['d'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
     }
 ?>
@@ -445,20 +537,32 @@
         {
             echo PHP_EOL.'<div class="line_name_container end_line_name_container line_'.$line_row_index.'" style="top: '.(end($line_row['path'])[1]*100*$canvas_ratio).'%; left: '.(end($line_row['path'])[0]*100).'%;"><div class="line_name">'.$line_row['alternate_name'].'</div></div>'.PHP_EOL;
         }
+        if (!empty($line_row['content']))
+        {
+
+        }
     }
     // Stop Name
     foreach($stop_set as $stop_row_index=>$stop_row)
     {
         if ($stop_row['junction_id'] == 0)
         {
-            echo PHP_EOL.'<div class="stop_name_container line_'.$stop_row['line_id'].'" style="'.$stop_row['text_location'].'"><div class="stop_name">'.$stop_row['name'].'</div></div>'.PHP_EOL;
+            echo PHP_EOL.'<div class="stop_name_container line_'.$stop_row['line_id'].'" style="'.$stop_row['text_location'].'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'"><div class="stop_name">'.$stop_row['name'].'</div></div>'.PHP_EOL;
         }
     }
     // Junction Name
     foreach($junction_set as $junction_row_index=>$junction_row)
     {
         $line_class = 'line_'.implode(' line_',$junction_row['line_id']);
-        echo PHP_EOL.'<div class="stop_name_container junction_stop_name_container '.$line_class.'" style="'.$junction_row['text_location'].'"><div class="stop_name">'.$junction_row['name'].'</div></div>'.PHP_EOL;
+        echo PHP_EOL.'<div class="stop_name_container junction_stop_name_container '.$line_class.'" style="'.$junction_row['text_location'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'"><div class="stop_name">'.$junction_row['name'].'</div></div>'.PHP_EOL;
+    }
+    // Tooltip
+    foreach($stop_set as $stop_row_index=>$stop_row)
+    {
+        if (!empty($stop_row['name']))
+        {
+            echo PHP_EOL.'<div id="stop_description_container_'.$stop_row['id'].'" class="stop_description_container line_'.$stop_row['line_id'].'" style="'.$stop_row['description_location'].'"><div class="stop_description"><div class="stop_description_title">'.$stop_row['name'].'</div><div class="stop_description_content">'.$stop_row['description'].'</div></div></div>'.PHP_EOL;
+        }
     }
 ?>
         <div class="line_legendary_container">
@@ -468,7 +572,7 @@
     {
         if (!empty($line_row['name']))
         {
-            echo PHP_EOL.'<div id="line_legendary_'.$line_row_index.'" class="line_legendary"><div class="line_name_container line_'.$line_row_index.'"></div>'.$line_row['name'].'</div>'.PHP_EOL;
+            echo PHP_EOL.'<div id="line_legendary_'.$line_row_index.'" class="line_legendary" data-line_id="'.$stop_row['line_id'].'"><div class="line_name_container line_'.$line_row_index.'"></div>'.$line_row['name'].'</div>'.PHP_EOL;
         }
     }
 ?>
@@ -485,18 +589,51 @@
 //        $('#point_table').append('<tr><td>'+(event.pageX-$('.svg_drawing_container').offset().left)+'</td><td>'+(event.pageY-$('.svg_drawing_container').offset().top)+'</td></tr>')
 //    });
     $('.line_legendary').click(function(event){
-        console.log($(this).data('line'));
+        console.log($(this).data('line_id'));
         $('.svg_drawing_container').addClass('svg_drawing_container_animation_active');
-        $('.line_'+$(this).data('line').id).css({'opacity':1});
-        $('.svg_drawing .line_'+$(this).data('line').id).addClass('line_animation_active')
-        console.log($('.svg_drawing .line_'+$(this).data('line').id));
-
+        $('.svg_drawing_container').toggleClass('line_active_'+$(this).data('line_id'));
+        if ($('.svg_drawing_container').attr('class').indexOf('line_active_') === -1)
+        {
+            $('.svg_drawing_container').removeClass('svg_drawing_container_animation_active');
+        }
+    });
+    $('.svg_drawing_container').on('click',function(event){
+console.log($(event.target).data());
+        var clicked_element = $(event.target);
+        if (clicked_element.hasClass('stop_name'))
+        {
+            clicked_element.closest('stop_name_container');
+        }
+        if (clicked_element.data('junction_id'))
+        {
+            $('.show_description').removeClass('show_description');
+            var stop_description = $('#stop_description_container_'+clicked_element.data('junction_id'));
+            stop_description.addClass('show_description');
+            setTimeout(function(){
+                stop_description.removeClass('show_description');
+            },5000);
+        }
+        else
+        {
+            if (clicked_element.data('stop_id'))
+            {
+                $('.show_description').removeClass('show_description');
+                var stop_description = $('#stop_description_container_'+clicked_element.data('stop_id'));
+console.log(stop_description);
+                stop_description.addClass('show_description');
+                setTimeout(function(){
+                    stop_description.removeClass('show_description');
+                },5000);
+            }
+        }
     });
     $(document).ready(function(){
+        $('.svg_drawing_container').data('line',<?=json_encode($line_set)?>);
+        $('.svg_drawing_container').data('stop',<?=json_encode($stop_set)?>);
 <?php
     foreach($line_set as $line_row_index=>$line_row)
     {
-        echo '$(\'#line_legendary_'.$line_row['id'].'\').data(\'line\','.json_encode($line_row).');'.PHP_EOL;
+        echo '$(\'#line_legendary_'.$line_row['id'].'\').data(\'line_id\','.$line_row['id'].');'.PHP_EOL;
     }
 
 ?>
