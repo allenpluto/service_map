@@ -101,6 +101,7 @@
             'name'=>$stop_fetch_row['name'],
             'description'=>$stop_fetch_row['description'],
             'line_id'=>$stop_fetch_row['line_id'],
+            'line_position'=>$stop_fetch_row['line_position'],
             'junction_id'=>$stop_fetch_row['junction_id'],
             'x'=>$stop_fetch_row['point_x'],
             'y'=>$stop_fetch_row['point_y'],
@@ -142,7 +143,7 @@
         {
             $stop_row['text_location'] .= 'bottom:'.((1/$canvas_ratio-$stop_fetch_row['point_y']-$stop_fetch_row['text_y'])*100*$canvas_ratio).'%;vertical-align:bottom;';
         }
-        $stop_row['description_location'] =  'left:'.($stop_fetch_row['point_x']*100).'%;bottom:'.((1/$canvas_ratio-$stop_fetch_row['point_y']+$circle_radius*2)*100*$canvas_ratio).'%';
+        $stop_row['description_location'] =  'left:'.($stop_fetch_row['point_x']*100).'%;bottom:'.((1/$canvas_ratio-$stop_fetch_row['point_y']+$circle_radius*4)*100*$canvas_ratio).'%';
 
 
         $stop_set[$stop_fetch_row['id']] = $stop_row;
@@ -236,9 +237,13 @@
             }
             while (!empty($line_row['stop'][$line_position]) AND $line_row['stop'][$line_position]['x'] >= min($path_endpoint[0], $line_row['path'][$path_endpoint_index-1][0]) AND $line_row['stop'][$line_position]['x'] <= max($path_endpoint[0], $line_row['path'][$path_endpoint_index-1][0]) AND $line_row['stop'][$line_position]['y'] >= min($path_endpoint[1], $line_row['path'][$path_endpoint_index-1][1]) AND $line_row['stop'][$line_position]['y'] <= max($path_endpoint[1], $line_row['path'][$path_endpoint_index-1][1]))
             {
-                $line_row['track'][] = ['x'=>floatval($line_row['stop'][$line_position]['x']),'y'=>floatval($line_row['stop'][$line_position]['y']),'stop_id'=>intval($line_row['stop'][$line_position]['id'])];
+                $line_row['track'][] = ['x'=>floatval($line_row['stop'][$line_position]['x']),'y'=>floatval($line_row['stop'][$line_position]['y']),'stop_id'=>intval($line_row['stop'][$line_position]['id']),'line_position'=>$line_position];
 //                print_r($line_row['track']);print_r($line_row['stop'][$line_position]);exit;
                 $line_position++;
+                if (end($line_row['track'])['x'] == $path_endpoint[0] AND end($line_row['track'])['y'] == $path_endpoint[1])
+                {
+                    continue 2;
+                }
             }
             $line_row['track'][] = ['x'=>$path_endpoint[0],'y'=>$path_endpoint[1]];
         }
@@ -478,6 +483,20 @@
     {
         margin: 0 0 0.5em 0;
     }
+
+    .train_animation
+    {
+        display: block;
+        width: 3em;
+        height: 3em;
+        position: absolute;
+        margin: -1.5em 0 0 -1.5em;
+
+        background: url('train.png');
+        background-size: cover;
+
+        z-index: 300;
+    }
 </style>
 <!--<svg width="1800" height="1500" xmlns="http://www.w3.org/2000/svg" fill="transparent">-->
     <!--&lt;!&ndash;<path d="M1140 1070 L1140 900 L850 900 L850 870 L600 870 L600 600 L770 600" stroke="black" stroke-width="6" />&ndash;&gt;-->
@@ -496,19 +515,19 @@
 <!--<canvas id="canvas_bg" width="--><?//=$canvas_size?><!--" height="--><?//=round($canvas_size/$canvas_ratio,0)?><!--"></canvas>-->
 <div class="svg_drawing_wrapper">
     <div class="svg_drawing_container">
-        <svg class="svg_drawing" xmlns="http://www.w3.org/2000/svg" fill="transparent" viewBox="0 0 1000 800">
+        <svg class="svg_drawing" xmlns="http://www.w3.org/2000/svg" fill="transparent" viewBox="0 0 <?=$canvas_size?> <?=$canvas_size/$canvas_ratio?>">
 <?php
     // Draw Line
     foreach($line_set as $line_row_index=>$line_row)
     {
-        echo PHP_EOL.'<path class="line_'.$line_row_index.'" stroke="rgb('.implode(',',$line_row['color']).')" stroke-width="'.get_path_point($stroke_width).'" d="'.$line_row['d'].'" />'.PHP_EOL;
+        echo '<path class="line_'.$line_row_index.'" stroke="rgb('.implode(',',$line_row['color']).')" stroke-width="'.get_path_point($stroke_width).'" d="'.$line_row['d'].'" />'.PHP_EOL;
     }
     // Draw Stop Circles
     foreach($stop_set as $stop_row_index=>$stop_row)
     {
         if ($stop_row['junction_id'] == 0)
         {
-            echo PHP_EOL.'<circle class="line_stop line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'" />'.PHP_EOL;
+            echo '<circle id="line_stop_'.$stop_row['id'].'" class="line_stop line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'" />'.PHP_EOL;
         }
     }
     foreach($junction_set as $junction_row_index=>$junction_row)
@@ -516,11 +535,11 @@
         $line_class = 'line_'.implode(' line_',$junction_row['line_id']);
         if (empty($junction_row['d']))
         {
-            echo PHP_EOL.'<circle class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
+            echo '<circle id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
         else
         {
-            echo PHP_EOL.'<path class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white"  d="'.$junction_row['d'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
+            echo '<path id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white"  d="'.$junction_row['d'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
     }
 ?>
@@ -572,7 +591,7 @@
     {
         if (!empty($line_row['name']))
         {
-            echo PHP_EOL.'<div id="line_legendary_'.$line_row_index.'" class="line_legendary" data-line_id="'.$stop_row['line_id'].'"><div class="line_name_container line_'.$line_row_index.'"></div>'.$line_row['name'].'</div>'.PHP_EOL;
+            echo PHP_EOL.'<div id="line_legendary_'.$line_row_index.'" class="line_legendary" data-line_id="'.$line_row['id'].'"><div class="line_name_container line_'.$line_row_index.'"></div>'.$line_row['name'].'</div>'.PHP_EOL;
         }
     }
 ?>
@@ -588,55 +607,159 @@
 //console.log($('#canvas_bg').offset());
 //        $('#point_table').append('<tr><td>'+(event.pageX-$('.svg_drawing_container').offset().left)+'</td><td>'+(event.pageY-$('.svg_drawing_container').offset().top)+'</td></tr>')
 //    });
-    $('.line_legendary').click(function(event){
-        console.log($(this).data('line_id'));
-        $('.svg_drawing_container').addClass('svg_drawing_container_animation_active');
-        $('.svg_drawing_container').toggleClass('line_active_'+$(this).data('line_id'));
-        if ($('.svg_drawing_container').attr('class').indexOf('line_active_') === -1)
-        {
-            $('.svg_drawing_container').removeClass('svg_drawing_container_animation_active');
-        }
-    });
-    $('.svg_drawing_container').on('click',function(event){
-console.log($(event.target).data());
-        var clicked_element = $(event.target);
-        if (clicked_element.hasClass('stop_name'))
-        {
-            clicked_element.closest('stop_name_container');
-        }
-        if (clicked_element.data('junction_id'))
-        {
+
+
+
+    $(document).ready(function(){
+        $('.svg_drawing_container').data('canvas',{'canvas_size':<?=$canvas_size?>,'canvas_ratio':<?=$canvas_ratio?>});
+        $('.svg_drawing_container').data('line',<?=json_encode($line_set)?>);
+        $('.svg_drawing_container').data('stop',<?=json_encode($stop_set)?>);
+        $('.svg_drawing_container').data('active_line',[]);
+        $('.svg_drawing_container').data('animation',{'line_id':0,'direction':1,'stop_id':0,'position':0});
+        $('.svg_drawing_container').on('start_animation', function() {
+            var canvas_data = $('.svg_drawing_container').data('canvas');
+            var line_data = $('.svg_drawing_container').data('line');
+            var active_line = $('.svg_drawing_container').data('active_line');
+            var animation_data = $('.svg_drawing_container').data('animation');
+
+            animation_data['line_id'] = active_line[Math.floor(Math.random() * active_line.length)];
+            animation_data['direction'] = 1;
+            animation_data['position'] = 0;
+            if (line_data[animation_data['line_id']]['alternate_name'])
+            {
+                animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
+                if (animation_data['direction'] == -1)
+                {
+                    animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                }
+            }
+            $('.train_animation').remove();
+            $('<div />',{
+                'class':'train_animation'
+            }).css({
+                'left':(line_data[animation_data['line_id']]['track'][animation_data['position']]['x']*100)+'%',
+                'top':(line_data[animation_data['line_id']]['track'][animation_data['position']]['y']*100*canvas_data['canvas_ratio'])+'%'
+            }).appendTo('.svg_drawing_container');
+console.log(line_data[animation_data['line_id']]['track']);
+            $('.svg_drawing_container').data('animation',animation_data);
+            $('.svg_drawing_container').trigger('trigger_animation');
+        });
+        $('.svg_drawing_container').on('trigger_animation', function() {
+            var canvas_data = $('.svg_drawing_container').data('canvas');
+            var line_data = $('.svg_drawing_container').data('line');
+            var active_line = $('.svg_drawing_container').data('active_line');
+            var animation_data = $('.svg_drawing_container').data('animation');
+            var speed = 0.00005; //travel 2% of canvas width per second
+            var pause_time = 5000;
+            var easing = 'swing';
+
+            if (animation_data['animation_timer'])
+            {
+                clearTimeout(animation_data['animation_timer']);
+            }
+
+            if (!animation_data['stop_id'])
+            {
+                pause_time = 0;
+                easing = 'linear';
+            }
+            if (animation_data['direction'] == 1)
+            {
+                if (animation_data['position'] >= line_data[animation_data['line_id']]['track'].length - 1)
+                {
+                    animation_data['direction'] = -1;
+                    pause_time = 1000;
+                }
+            }
+            else
+            {
+                if (animation_data['position'] <= 0)
+                {
+                    animation_data['direction'] = 1;
+                    pause_time = 1000;
+                }
+            }
+            var next_line = animation_data['line_id'];
+            var next_position = animation_data['position']+animation_data['direction'];
+            var distance = Math.sqrt(Math.pow(line_data[animation_data['line_id']]['track'][animation_data['position']]['x']-line_data[next_line]['track'][next_position]['x'],2) + Math.pow(line_data[animation_data['line_id']]['track'][animation_data['position']]['y']-line_data[next_line]['track'][next_position]['y'],2));
+            animation_data['animation_timer'] = setTimeout(function(){
+                $('.train_animation').animate({
+                    'left':(line_data[next_line]['track'][next_position]['x']*100)+'%',
+                    'top':(line_data[next_line]['track'][next_position]['y']*100*canvas_data['canvas_ratio'])+'%'
+                },distance/speed,easing,function(){
+                    animation_data['line_id'] = next_line;
+                    animation_data['position'] = next_position;
+                    if (line_data[next_line]['track'][next_position]['stop_id'])
+                    {
+                        animation_data['stop_id'] = line_data[next_line]['track'][next_position]['stop_id'];
+                        $('.svg_drawing_container').trigger('display_tooltip',[animation_data['stop_id']]);
+                    }
+                    else
+                    {
+                        animation_data['stop_id'] = 0;
+                    }
+                    $('.svg_drawing_container').data('animation',animation_data);
+                    $('.svg_drawing_container').trigger('trigger_animation');
+                });
+            },pause_time);
+        });
+        $('.svg_drawing_container').on('display_tooltip',function(event,stop_id){
+            var stop_data = $('.svg_drawing_container').data('stop');
+            var stop = stop_data[stop_id];
+            if (stop['junction_id'] > 0)
+            {
+                stop_id = stop['junction_id'];
+            }
             $('.show_description').removeClass('show_description');
-            var stop_description = $('#stop_description_container_'+clicked_element.data('junction_id'));
+            var stop_description = $('#stop_description_container_'+stop_id);
             stop_description.addClass('show_description');
             setTimeout(function(){
                 stop_description.removeClass('show_description');
             },5000);
-        }
-        else
-        {
+        });
+        $('.svg_drawing_container').on('click',function(event){
+            var clicked_element = $(event.target);
+            if (clicked_element.hasClass('stop_name'))
+            {
+                clicked_element = clicked_element.closest('.stop_name_container');
+            }
+console.log(clicked_element);
             if (clicked_element.data('stop_id'))
             {
-                $('.show_description').removeClass('show_description');
-                var stop_description = $('#stop_description_container_'+clicked_element.data('stop_id'));
-console.log(stop_description);
-                stop_description.addClass('show_description');
-                setTimeout(function(){
-                    stop_description.removeClass('show_description');
-                },5000);
+                $('.svg_drawing_container').trigger('display_tooltip',[clicked_element.data('stop_id')]);
             }
-        }
-    });
-    $(document).ready(function(){
-        $('.svg_drawing_container').data('line',<?=json_encode($line_set)?>);
-        $('.svg_drawing_container').data('stop',<?=json_encode($stop_set)?>);
-<?php
-    foreach($line_set as $line_row_index=>$line_row)
-    {
-        echo '$(\'#line_legendary_'.$line_row['id'].'\').data(\'line_id\','.$line_row['id'].');'.PHP_EOL;
-    }
+        });
+        $('.line_legendary').click(function(event){
+            var active_line = $('.svg_drawing_container').data('active_line');
+            var animation_data = $('.svg_drawing_container').data('animation');
 
-?>
+            $('.svg_drawing_container').addClass('svg_drawing_container_animation_active');
+            if ($('.svg_drawing_container').hasClass('line_active_'+$(this).data('line_id')))
+            {
+                var pos = active_line.indexOf($(this).data('line_id'));
+                if (pos > -1)
+                {
+                    active_line.splice(pos,1);
+                }
+                $('.svg_drawing_container').removeClass('line_active_'+$(this).data('line_id'));
+            }
+            else
+            {
+                active_line.push($(this).data('line_id'));
+                $('.svg_drawing_container').addClass('line_active_'+$(this).data('line_id'));
+            }
+            if (active_line.length == 0)
+            {
+                $('.svg_drawing_container').removeClass('svg_drawing_container_animation_active');
+            }
+            $('.svg_drawing_container').data('active_line',active_line);
+            if (active_line.indexOf(animation_data['line_id']) == -1)
+            {
+                $('.svg_drawing_container').trigger('start_animation');
+            }
+        });
+
+
     });
 </script>
 </body>
