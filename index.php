@@ -289,6 +289,10 @@
     {
         fill: rgb(236,30,43);
     }
+    .svg_drawing_container_animation_active .line_stop
+    {
+        cursor: default;;
+    }
     .line_name_container
     {
         display:block;
@@ -353,6 +357,7 @@
     .svg_drawing_container_animation_active .line_name_container,
     .svg_drawing_container_animation_active .stop_name_container
     {
+        cursor: default;;
         opacity: 0.2;
     }
     .line_legendary_container
@@ -384,16 +389,20 @@
 
         vertical-align: middle;
     }
+
 <?php
     foreach($line_set as $line_row_index=>$line_row)
     {
         echo '.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
         echo '.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
         echo '#line_legendary_'.$line_row_index.' {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .svg_drawing .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
         echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_stop.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .stop_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
     }
 ?>
+
     .stop_name_container.junction_stop_name_container
     {
         margin-left:-2.5em;
@@ -484,6 +493,49 @@
         margin: 0 0 0.5em 0;
     }
 
+    .line_info_container
+    {
+        display: block;
+        width: 18em;
+        height: 30em;
+        position: absolute;
+        padding: 0.8em 1em;
+        bottom: 0;
+        right: 0;
+
+        background: #ffffff;
+
+        border:0.2em solid #eeeeee;
+        border-radius:1em;
+
+        opacity: 0;
+        z-index: -1;
+
+        -webkit-transition:opacity 500ms ease;
+        -moz-transition:opacity 500ms ease;
+        -ms-transition:opacity 500ms ease;
+        -o-transition:opacity 500ms ease;
+        transition:opacity 500ms ease;
+
+        overflow: auto;
+    }
+
+    .line_info_container_display
+    {
+        opacity: 1;
+        z-index: 120;
+    }
+
+    .line_info_title
+    {
+        display: block;
+        width: 100%;
+        padding-bottom: 0.5em;
+
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
     .train_animation
     {
         display: block;
@@ -550,11 +602,11 @@
     {
         if (!empty($line_row['name']))
         {
-            echo PHP_EOL.'<div class="line_name_container line_'.$line_row_index.'" style="top: '.($line_row['path'][0][1]*100*$canvas_ratio).'%; left: '.($line_row['path'][0][0]*100).'%;"><div class="line_name">'.$line_row['name'].'</div></div>'.PHP_EOL;
+            echo PHP_EOL.'<div class="line_name_container line_'.$line_row_index.'" style="top: '.($line_row['path'][0][1]*100*$canvas_ratio).'%; left: '.($line_row['path'][0][0]*100).'%;" data-line_id="'.$line_row_index.'"><div class="line_name">'.$line_row['name'].'</div></div>'.PHP_EOL;
         }
         if (!empty($line_row['alternate_name']))
         {
-            echo PHP_EOL.'<div class="line_name_container end_line_name_container line_'.$line_row_index.'" style="top: '.(end($line_row['path'])[1]*100*$canvas_ratio).'%; left: '.(end($line_row['path'])[0]*100).'%;"><div class="line_name">'.$line_row['alternate_name'].'</div></div>'.PHP_EOL;
+            echo PHP_EOL.'<div class="line_name_container end_line_name_container line_'.$line_row_index.'" style="top: '.(end($line_row['path'])[1]*100*$canvas_ratio).'%; left: '.(end($line_row['path'])[0]*100).'%;" data-line_id="'.$line_row_index.'"><div class="line_name">'.$line_row['alternate_name'].'</div></div>'.PHP_EOL;
         }
         if (!empty($line_row['content']))
         {
@@ -596,6 +648,16 @@
     }
 ?>
         </div>
+<?php
+     // Line Name
+    foreach($line_set as $line_row_index=>$line_row)
+    {
+        if (!empty($line_row['name']))
+        {
+            echo PHP_EOL.'<div id="line_info_container_'.$line_row_index.'" class="line_info_container" data-line_id="'.$line_row['id'].'"><div class="line_info_title">'.$line_row['name'].'</div><div class="line_info_content">'.$line_row['content'].'</div></div>'.PHP_EOL;
+        }
+    }
+?>
     </div>
 </div>
 <table id="point_table">
@@ -609,29 +671,55 @@
 //    });
 
 
-
     $(document).ready(function(){
         $('.svg_drawing_container').data('canvas',{'canvas_size':<?=$canvas_size?>,'canvas_ratio':<?=$canvas_ratio?>});
         $('.svg_drawing_container').data('line',<?=json_encode($line_set)?>);
         $('.svg_drawing_container').data('stop',<?=json_encode($stop_set)?>);
+        $('.svg_drawing_container').data('junction',<?=json_encode($junction_set)?>);
         $('.svg_drawing_container').data('active_line',[]);
         $('.svg_drawing_container').data('animation',{'line_id':0,'direction':1,'stop_id':0,'position':0});
+        $('.svg_drawing_container').data('animate_on',false);
+
         $('.svg_drawing_container').on('start_animation', function() {
+            if ($('.svg_drawing_container').data('animate_on'))
+            {
+                setTimeout(function(){
+                    $('.svg_drawing_container').trigger('start_animation');
+                },1000);
+                return false;
+            }
             var canvas_data = $('.svg_drawing_container').data('canvas');
             var line_data = $('.svg_drawing_container').data('line');
             var active_line = $('.svg_drawing_container').data('active_line');
             var animation_data = $('.svg_drawing_container').data('animation');
 
-            animation_data['line_id'] = active_line[Math.floor(Math.random() * active_line.length)];
-            animation_data['direction'] = 1;
-            animation_data['position'] = 0;
-            if (line_data[animation_data['line_id']]['alternate_name'])
+            if ($('.svg_drawing_container').data('animation_timer'))
             {
-                animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
-                if (animation_data['direction'] == -1)
+                clearTimeout($('.svg_drawing_container').data('animation_timer'));
+                $('.svg_drawing_container').data('animation_timer','');
+            }
+
+            if (active_line.length == 0)
+            {
+                active_line = [];
+                Object.keys(line_data).forEach(function(line_id){
+                    active_line.push(parseInt(line_id));
+                });
+            }
+            if (active_line.indexOf(animation_data['line_id']) == -1)
+            {
+                animation_data['line_id'] = parseInt(active_line[Math.floor(Math.random() * active_line.length)]);
+                animation_data['direction'] = 1;
+                animation_data['position'] = 0;
+                if (line_data[animation_data['line_id']]['alternate_name'])
                 {
-                    animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                    animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
+                    if (animation_data['direction'] == -1)
+                    {
+                        animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                    }
                 }
+                $('.svg_drawing_container').trigger('display_line_info',[animation_data['line_id']]);
             }
             $('.train_animation').remove();
             $('<div />',{
@@ -640,58 +728,167 @@
                 'left':(line_data[animation_data['line_id']]['track'][animation_data['position']]['x']*100)+'%',
                 'top':(line_data[animation_data['line_id']]['track'][animation_data['position']]['y']*100*canvas_data['canvas_ratio'])+'%'
             }).appendTo('.svg_drawing_container');
-console.log(line_data[animation_data['line_id']]['track']);
             $('.svg_drawing_container').data('animation',animation_data);
             $('.svg_drawing_container').trigger('trigger_animation');
         });
         $('.svg_drawing_container').on('trigger_animation', function() {
             var canvas_data = $('.svg_drawing_container').data('canvas');
             var line_data = $('.svg_drawing_container').data('line');
+            var stop_data = $('.svg_drawing_container').data('stop');
+            var junction_data = $('.svg_drawing_container').data('junction');
             var active_line = $('.svg_drawing_container').data('active_line');
             var animation_data = $('.svg_drawing_container').data('animation');
-            var speed = 0.00005; //travel 2% of canvas width per second
+            var speed = 0.00003; //travel % of canvas width per milli-second
             var pause_time = 5000;
             var easing = 'swing';
 
-            if (animation_data['animation_timer'])
+            if ($('.svg_drawing_container').data('animation_timer'))
             {
-                clearTimeout(animation_data['animation_timer']);
+                clearTimeout($('.svg_drawing_container').data('animation_timer'));
+                $('.svg_drawing_container').data('animation_timer','');
             }
 
+            if (active_line.length == 0)
+            {
+                active_line = [];
+                Object.keys(line_data).forEach(function(line_id){
+                    active_line.push(parseInt(line_id));
+                });
+            }
             if (!animation_data['stop_id'])
             {
                 pause_time = 0;
                 easing = 'linear';
             }
+            else
+            {
+                if (stop_data[animation_data['stop_id']]['junction_id'] > 0)
+                {
+                    var stop_in_junction = junction_data[stop_data[animation_data['stop_id']]['junction_id']]['stop_id'];
+                    var stop_available = [];
+                    stop_in_junction.forEach(function(stop_id_in_junction, index){
+                        if (active_line.indexOf(parseInt(stop_data[stop_id_in_junction]['line_id'])) > -1)
+                        {
+                            stop_available.push(stop_id_in_junction);
+                        }
+                    });
+                    animation_data['stop_id'] = parseInt(stop_available[Math.floor(Math.random() * stop_available.length)]);
+                    if (animation_data['line_id'] != parseInt(stop_data[animation_data['stop_id']]['line_id']))
+                    {
+                        animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;
+                        $('.svg_drawing_container').trigger('display_line_info',[stop_data[animation_data['stop_id']]['line_id']]);
+                    }
+                    animation_data['line_id'] = parseInt(stop_data[animation_data['stop_id']]['line_id']);
+                    line_data[animation_data['line_id']]['track'].forEach(function(track_point,track_index){
+                        if (track_point['stop_id'] == animation_data['stop_id'])
+                        {
+                            animation_data['position'] = track_index;
+                            $('.train_animation').animate({
+                                'left':(track_point['x']*100)+'%',
+                                'top':(track_point['y']*100*canvas_data['canvas_ratio'])+'%'
+                            },500);
+                        }
+                    });
+
+                }
+            }
+            // Reach the end of line
             if (animation_data['direction'] == 1)
             {
                 if (animation_data['position'] >= line_data[animation_data['line_id']]['track'].length - 1)
                 {
-                    animation_data['direction'] = -1;
-                    pause_time = 1000;
+                    if (active_line.length > 1 && animation_data['stop_id'] == 0)
+                    {
+                        setTimeout(function(){
+                            if (animation_data['line_id'] == 5)
+                            {
+                                animation_data['line_id'] = 6;
+                                animation_data['direction'] = 1;
+                                animation_data['position'] = 0;
+                            }
+                            else
+                            {
+                                animation_data['line_id'] = parseInt(active_line[Math.floor(Math.random() * active_line.length)]);
+                                animation_data['direction'] = 1;
+                                animation_data['position'] = 0;
+                                if (line_data[animation_data['line_id']]['alternate_name'])
+                                {
+                                    animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
+                                    if (animation_data['direction'] == -1)
+                                    {
+                                        animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                                    }
+                                }
+                            }
+                            $('.svg_drawing_container').data('animation',animation_data);
+                            $('.svg_drawing_container').trigger('display_line_info',[animation_data['line_id']]);
+                            $('.svg_drawing_container').trigger('start_animation');
+                        },1000);
+                        return false;
+                    }
+                    else
+                    {
+                        animation_data['direction'] = -1;
+                        pause_time = 1000;
+                    }
                 }
             }
             else
             {
                 if (animation_data['position'] <= 0)
                 {
-                    animation_data['direction'] = 1;
-                    pause_time = 1000;
+                    if (active_line.length > 1 && animation_data['stop_id'] == 0)
+                    {
+                        setTimeout(function(){
+                            if (animation_data['line_id'] == 6)
+                            {
+                                animation_data['line_id'] = 5;
+                                animation_data['direction'] = -1;
+                                animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                            }
+                            else
+                            {
+                                animation_data['line_id'] = parseInt(active_line[Math.floor(Math.random() * active_line.length)]);
+                                animation_data['direction'] = 1;
+                                animation_data['position'] = 0;
+                                if (line_data[animation_data['line_id']]['alternate_name'])
+                                {
+                                    animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
+                                    if (animation_data['direction'] == -1)
+                                    {
+                                        animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                                    }
+                                }
+                            }
+                            $('.svg_drawing_container').data('animation',animation_data);
+                            $('.svg_drawing_container').trigger('display_line_info',[animation_data['line_id']]);
+                            $('.svg_drawing_container').trigger('start_animation');
+                        },1000);
+                        return false;
+                    }
+                    else
+                    {
+                        animation_data['direction'] = 1;
+                        pause_time = 1000;
+                    }
                 }
             }
             var next_line = animation_data['line_id'];
             var next_position = animation_data['position']+animation_data['direction'];
             var distance = Math.sqrt(Math.pow(line_data[animation_data['line_id']]['track'][animation_data['position']]['x']-line_data[next_line]['track'][next_position]['x'],2) + Math.pow(line_data[animation_data['line_id']]['track'][animation_data['position']]['y']-line_data[next_line]['track'][next_position]['y'],2));
-            animation_data['animation_timer'] = setTimeout(function(){
+
+            var animation_timer = setTimeout(function(){
+                $('.svg_drawing_container').data('animate_on',true);
                 $('.train_animation').animate({
                     'left':(line_data[next_line]['track'][next_position]['x']*100)+'%',
                     'top':(line_data[next_line]['track'][next_position]['y']*100*canvas_data['canvas_ratio'])+'%'
                 },distance/speed,easing,function(){
+                    $('.svg_drawing_container').data('animate_on',false);
                     animation_data['line_id'] = next_line;
                     animation_data['position'] = next_position;
                     if (line_data[next_line]['track'][next_position]['stop_id'])
                     {
-                        animation_data['stop_id'] = line_data[next_line]['track'][next_position]['stop_id'];
+                        animation_data['stop_id'] = parseInt(line_data[next_line]['track'][next_position]['stop_id']);
                         $('.svg_drawing_container').trigger('display_tooltip',[animation_data['stop_id']]);
                     }
                     else
@@ -702,13 +899,40 @@ console.log(line_data[animation_data['line_id']]['track']);
                     $('.svg_drawing_container').trigger('trigger_animation');
                 });
             },pause_time);
+            $('.svg_drawing_container').data('animation_timer',animation_timer);
         });
         $('.svg_drawing_container').on('display_tooltip',function(event,stop_id){
+//            var line_data = $('.svg_drawing_container').data('line');
+            var active_line = $('.svg_drawing_container').data('active_line');
             var stop_data = $('.svg_drawing_container').data('stop');
             var stop = stop_data[stop_id];
+
             if (stop['junction_id'] > 0)
             {
                 stop_id = stop['junction_id'];
+                if (active_line.length > 0)
+                {
+                    var line_active = false;
+                    var line_group = $('#line_stop_'+stop_id).data('line_id');
+                    line_group.forEach(function(element,index){
+                        if (active_line.indexOf(element) > -1)
+                        {
+                            line_active = true;
+                        }
+                    });
+                    if (line_active === false)
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                // If the line is not active, do not show tooltip
+                if (active_line.length > 0 && active_line.indexOf(parseInt(stop['line_id'])) == -1)
+                {
+                    return false;
+                }
             }
             $('.show_description').removeClass('show_description');
             var stop_description = $('#stop_description_container_'+stop_id);
@@ -717,21 +941,65 @@ console.log(line_data[animation_data['line_id']]['track']);
                 stop_description.removeClass('show_description');
             },5000);
         });
+        $('.svg_drawing_container').on('display_line_info',function(event, line_id){
+            var line_data = $('.svg_drawing_container').data('line');
+
+            $('.line_info_container_display').removeClass('line_info_container_display');
+            $('#line_info_container_'+line_id).addClass('line_info_container_display');
+        });
         $('.svg_drawing_container').on('click',function(event){
             var clicked_element = $(event.target);
+            var stop_data = $('.svg_drawing_container').data('stop');
+            var line_data = $('.svg_drawing_container').data('line');
+            var junction_data = $('.svg_drawing_container').data('junction');
+            var active_line = $('.svg_drawing_container').data('active_line');
+            var animation_data = $('.svg_drawing_container').data('animation');
+
             if (clicked_element.hasClass('stop_name'))
             {
                 clicked_element = clicked_element.closest('.stop_name_container');
             }
-console.log(clicked_element);
-            if (clicked_element.data('stop_id'))
+            if (active_line.length == 0)
             {
-                $('.svg_drawing_container').trigger('display_tooltip',[clicked_element.data('stop_id')]);
+                active_line = [];
+                Object.keys(line_data).forEach(function(line_id){
+                    active_line.push(parseInt(line_id));
+                });
+            }
+            if (clicked_element.data('junction_id'))
+            {
+                $('.svg_drawing_container').trigger('display_tooltip',[clicked_element.data('junction_id')]);
+
+                var stop_in_junction = junction_data[clicked_element.data('junction_id')]['stop_id'];
+                var stop_available = [];
+                stop_in_junction.forEach(function(stop_id_in_junction, index){
+                    if (active_line.indexOf(stop_data[stop_id_in_junction]['line_id']) > -1)
+                    {
+                        stop_available.push(stop_id_in_junction);
+                    }
+                });
+                animation_data['line_id'] = stop_data[clicked_element.data('junction_id')]['line_id'];
+                animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;
+                animation_data['position'] = 0;
+                if (line_data[animation_data['line_id']]['alternate_name'])
+                {
+                    animation_data['direction'] = 1 - Math.floor(Math.random() * 2)*2;    // random direction -1 or 1
+                    if (animation_data['direction'] == -1)
+                    {
+                        animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+                    }
+                }
+            }
+            else
+            {
+                if (clicked_element.data('stop_id'))
+                {
+                    $('.svg_drawing_container').trigger('display_tooltip',[clicked_element.data('stop_id')]);
+                }
             }
         });
         $('.line_legendary').click(function(event){
             var active_line = $('.svg_drawing_container').data('active_line');
-            var animation_data = $('.svg_drawing_container').data('animation');
 
             $('.svg_drawing_container').addClass('svg_drawing_container_animation_active');
             if ($('.svg_drawing_container').hasClass('line_active_'+$(this).data('line_id')))
@@ -753,12 +1021,23 @@ console.log(clicked_element);
                 $('.svg_drawing_container').removeClass('svg_drawing_container_animation_active');
             }
             $('.svg_drawing_container').data('active_line',active_line);
-            if (active_line.indexOf(animation_data['line_id']) == -1)
-            {
-                $('.svg_drawing_container').trigger('start_animation');
-            }
+            $('.svg_drawing_container').trigger('start_animation');
         });
+        $('.line_name_container').click(function(event){
+            var animation_data = $('.svg_drawing_container').data('animation');
 
+            animation_data['line_id'] = $(this).data('line_id');
+            animation_data['direction'] = 1;
+            animation_data['position'] = 0;
+            if ($(this).hasClass('end_line_name_container'))
+            {
+                animation_data['direction'] = -1;
+                animation_data['position'] = line_data[animation_data['line_id']]['track'].length - 1;
+            }
+            $('.svg_drawing_container').trigger('display_line_info',[animation_data['line_id']]);
+            $('.svg_drawing_container').trigger('start_animation');
+        });
+        $('.svg_drawing_container').trigger('start_animation');
 
     });
 </script>
