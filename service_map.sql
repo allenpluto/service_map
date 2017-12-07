@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Dec 04, 2017 at 05:24 PM
+-- Generation Time: Dec 07, 2017 at 02:21 PM
 -- Server version: 5.6.12-log
 -- PHP Version: 5.4.12
 
@@ -66,16 +66,16 @@ CREATE TABLE IF NOT EXISTS `tbl_entity_line` (
 --
 
 INSERT INTO `tbl_entity_line` (`id`, `friendly_uri`, `name`, `alternate_name`, `description`, `image_id`, `enter_time`, `update_time`, `color`, `path`, `content`) VALUES
-(1, '', 'Content Marketing', 'Inbound Links', '', 0, '2017-11-28 04:03:13', '2017-11-28 05:57:54', '[240,88,39]', '[[0.495,0.655],[0.58,0.475],[0.58,0.43],[0.54,0.43],[0.54,0.37],[0.44,0.37],[0.44,0.325],[0.35,0.235],[0.16,0.235],[0.16,0.2]]', ''),
-(2, '', 'Local SEO', '', '', 0, '2017-11-27 05:31:33', '2017-11-28 05:52:01', '[240,103,147]', '[[0.655,0.59],[0.655,0.485],[0.485,0.485],[0.485,0.475],[0.345,0.475],[0.345,0.325],[0.44,0.325]]', ''),
-(3, '', 'Social Meida', 'Social Meida', '', 0, '2017-11-28 04:22:16', '2017-11-28 05:46:37', '[11,134,67]', '[[0.55,0.105],[0.55,0.42],[0.635,0.42],[0.635,0.465],[0.675,0.465],[0.685,0.475],[0.745,0.475],[0.745,0.64]]', ''),
-(4, '', 'CRM', 'Email Marketing', '', 0, '2017-11-28 04:33:05', '2017-11-28 05:39:53', '[22,154,216]', '[[0.73,0.13],[0.635,0.305],[0.635,0.42],[0.895,0.42]]', ''),
-(5, '', 'Social Paid', '', '', 0, '2017-11-28 05:28:12', '2017-11-28 05:35:40', '[148,157,162]', '[[0.865,0.33],[0.835,0.32],[0.835,0.17]]', ''),
-(6, '', 'Paid Search', '', '', 0, '2017-11-28 04:38:00', '2017-11-28 05:35:28', '[236,30,43]', '[[0.835,0.17],[0.72,0.325],[0.58,0.325],[0.58,0.38],[0.635,0.42]]', ''),
-(7, '', 'Mobile', 'Emerging Technology', '', 0, '2017-11-28 04:44:49', '2017-11-28 05:24:48', '[151,32,96]', '[[0.26,0.145],[0.26,0.18],[0.445,0.18],[0.58,0.325],[0.46,0.325],[0.46,0.4],[0.44,0.415],[0.44,0.55],[0.38,0.6]]', ''),
-(8, '', 'Website', '', '', 0, '2017-11-28 04:58:09', '2017-12-01 03:34:37', '[94,46,132]', '[[0.23,0.39],[0.23,0.315],[0.25,0.305],[0.25,0.275],[0.085,0.275],[0.085,0.365],[0.28,0.365],[0.355,0.415],[0.355,0.465],[0.57,0.465],[0.57,0.445]]', ''),
-(9, '', 'Analytics', '', '', 0, '2017-11-28 05:02:51', '2017-11-28 05:24:48', '[87,58,54]', '[[0.065,0.455],[0.245,0.455],[0.28,0.415],[0.355,0.415],[0.355,0.335],[0.685,0.335],[0.685,0.475],[0.515,0.475]]', ''),
-(10, '', 'Technical SEO', '', '', 0, '2017-11-28 05:08:25', '2017-12-01 02:27:34', '[13,177,176]', '[[0.11,0.53],[0.225,0.53],[0.355,0.415],[0.365,0.415],[0.365,0.455],[0.515,0.455]]', '');
+(1, '', 'Content Marketing', 'Inbound Links', '', 0, '2017-11-28 04:03:13', '2017-12-07 02:41:50', '[240,88,39]', '[[0.495,0.655],[0.58,0.475],[0.58,0.43],[0.54,0.43],[0.54,0.37],[0.44,0.37],[0.44,0.325],[0.35,0.235],[0.16,0.235],[0.16,0.2]]', '<p>We see Content Marketing as the fuel that can drive online audience engagement for your business. If you can create a Content Marketing hub that is more powerful than your competitors then you should be able to pull further ahead.</p>'),
+(2, '', 'Local SEO', '', '', 0, '2017-11-27 05:31:33', '2017-12-07 02:41:50', '[240,103,147]', '[[0.655,0.59],[0.655,0.485],[0.485,0.485],[0.485,0.475],[0.345,0.475],[0.345,0.325],[0.44,0.325]]', '<p>How do you make sure your business is at the top for local searches? Unlike traditional search results, inbound links and the likes are less relevant but there are tactics you can use to try and ensure your business is prominent where relevant.</p>'),
+(3, '', 'Social Media', 'Social Media', '', 0, '2017-11-28 04:22:16', '2017-12-07 02:42:19', '[11,134,67]', '[[0.55,0.105],[0.55,0.42],[0.635,0.42],[0.635,0.465],[0.675,0.465],[0.685,0.475],[0.745,0.475],[0.745,0.64]]', '<p>Social media have transformed marketing, for the better most would say. We''ll help your business make the most of the power of social media marketing using a proven strategic approach across all social media channels.</p>'),
+(4, '', 'CRM', 'Email Marketing', '', 0, '2017-11-28 04:33:05', '2017-12-07 02:42:19', '[22,154,216]', '[[0.73,0.13],[0.635,0.305],[0.635,0.42],[0.895,0.42]]', '<p>Customer relationship management or CRM is a well established approach. Digital media provides new opportunities to tailor customer communications integrated with traditional channels. Let us help you take advantage of these opportunities.</p>'),
+(5, '', 'Social Paid', '', '', 0, '2017-11-28 05:28:12', '2017-12-07 02:42:19', '[148,157,162]', '[[0.865,0.33],[0.835,0.32],[0.835,0.17]]', '<p>There are ways you can use paid social media to build your social communities and followings. There are some good opportunities if you really want to grow your business with targeted traffic. We can market your website and blog through paid social media.</p>'),
+(6, '', 'Paid Search', '', '', 0, '2017-11-28 04:38:00', '2017-12-07 02:42:19', '[236,30,43]', '[[0.835,0.17],[0.72,0.325],[0.58,0.325],[0.58,0.38],[0.635,0.42]]', '<p>Paid search marketing opportunities includes Pay Per Click Ads via Google plus ads on the display network. The cost of paid search can be high, so we make sure you''re getting the most value from PPC by maximising your Google Quality Score.</p>'),
+(7, '', 'Mobile', 'Emerging Technology', '', 0, '2017-11-28 04:44:49', '2017-12-07 02:42:19', '[151,32,96]', '[[0.26,0.145],[0.26,0.18],[0.445,0.18],[0.58,0.325],[0.46,0.325],[0.46,0.4],[0.44,0.415],[0.44,0.55],[0.38,0.6]]', '<p>Mobile marketing is massive already and forecast to exceed desktop Internet access world-wide. So your business needs to reach your audience via mobile. Mobile sites and responsive websites ensure you’re visible and accessible to your customers.</p>'),
+(8, '', 'Website', '', '', 0, '2017-11-28 04:58:09', '2017-12-07 02:42:19', '[94,46,132]', '[[0.23,0.39],[0.23,0.315],[0.25,0.305],[0.25,0.275],[0.085,0.275],[0.085,0.365],[0.28,0.365],[0.355,0.415],[0.355,0.465],[0.57,0.465],[0.57,0.445]]', '<p>Businesses need to refresh their website to reflect new marketing positioning with the latest web design approaches to keep up with consumer demands and evolving technology. We provide the expertise and experience to get the most from your website.</p>'),
+(9, '', 'Analytics', '', '', 0, '2017-11-28 05:02:51', '2017-12-07 02:42:19', '[87,58,54]', '[[0.065,0.455],[0.245,0.455],[0.28,0.415],[0.355,0.415],[0.355,0.335],[0.685,0.335],[0.685,0.475],[0.515,0.475]]', '<p>Often, the power of web analytics is under-used. Web analytics strategy requires the right people, process, metrics and tools to get the most from it. Our experts use Google Analytics and Google Search Console to get the most from your Internet marketing.</p>'),
+(10, '', 'Technical SEO', '', '', 0, '2017-11-28 05:08:25', '2017-12-07 02:42:19', '[13,177,176]', '[[0.11,0.53],[0.225,0.53],[0.355,0.415],[0.365,0.415],[0.365,0.455],[0.515,0.455]]', '<p>The analogy of a train is used - no matter what the carriages look like (on-page content), if the engine (technical SEO) doesn''t work properly, nobody will ride the train. Leave it up to our SEO experts to make sure your website is built for consumers and search engines.</p>');
 
 -- --------------------------------------------------------
 

@@ -257,7 +257,7 @@
 </head>
 <body>
 <style>
-    .svg_drawing_wrapper {font-size: 10px;}
+    .svg_drawing_wrapper {font-size: 10px;font-family: Arial;}
     .svg_drawing_container
     {
         display: inline-block;
@@ -443,7 +443,8 @@
         position: relative;
         padding: 0.5em 1em;
 
-        background: #eeeeee;
+        color: rgb(11,134,67);
+        background: #ffffff;
 
         border: 2px solid #cccccc;
         border-radius: 1em;
@@ -544,7 +545,7 @@
         position: absolute;
         margin: -1.5em 0 0 -1.5em;
 
-        background: url('train.png');
+        background: url('business-man.png');
         background-size: cover;
 
         z-index: 300;
@@ -579,7 +580,7 @@
     {
         if ($stop_row['junction_id'] == 0)
         {
-            echo '<circle id="line_stop_'.$stop_row['id'].'" class="line_stop line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'" />'.PHP_EOL;
+            echo '<circle id="line_stop_'.$stop_row['id'].'" class="line_stop line_'.$stop_row['line_id'].'" stroke="black" stroke-width="'.get_path_point($stroke_width/2).'" fill="white" cx="'.$stop_row['cx'].'" cy="'.$stop_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="'.$stop_row['line_id'].'" data-stop_id="'.$stop_row['id'].'" />'.PHP_EOL;
         }
     }
     foreach($junction_set as $junction_row_index=>$junction_row)
@@ -587,11 +588,11 @@
         $line_class = 'line_'.implode(' line_',$junction_row['line_id']);
         if (empty($junction_row['d']))
         {
-            echo '<circle id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
+            echo '<circle id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width/2).'" fill="white" cx="'.$junction_row['cx'].'" cy="'.$junction_row['cy'].'" r="'.get_path_point($circle_radius).'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
         else
         {
-            echo '<path id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width).'" fill="white"  d="'.$junction_row['d'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
+            echo '<path id="line_stop_'.$junction_row['junction_id'].'" class="line_stop line_junction '.$line_class.'" stroke="black" stroke-width="'.get_path_point($stroke_width/2).'" fill="white"  d="'.$junction_row['d'].'" data-line_id="['.implode(',',$junction_row['line_id']).']" data-stop_id="['.implode(',',$junction_row['stop_id']).']" data-junction_id="'.$junction_row['junction_id'].'" />'.PHP_EOL;
         }
     }
 ?>
