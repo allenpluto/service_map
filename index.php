@@ -265,13 +265,15 @@
         /*background: url("background.jpg");*/
         /*background-size: cover;*/
         font-size: <?=$container_font_size?>em;
+        background: url('footer_background.png') bottom center no-repeat;
+        background-size: contain;
     }
     .svg_drawing
     {
         width: <?=$canvas_size/10?>em;
         height: <?=round($canvas_size/$canvas_ratio/10,0)?>em;
 
-        background: #ffffff;
+        background: -webkit-linear-gradient(top,#ffffff,rgba(255,255,255,1) 80%,rgba(255,255,255,0.6) 100%);
     }
     .svg_drawing_container_animation_active .svg_drawing > *
     {
@@ -365,7 +367,7 @@
         display: block;
         position: absolute;
         padding: 0.8em 1em;
-        bottom: 0;
+        bottom: 8em;
         left: 0;
 
         background: #ffffff;
@@ -388,31 +390,6 @@
         margin: 0 1em 0 0;
 
         vertical-align: middle;
-    }
-
-<?php
-    foreach($line_set as $line_row_index=>$line_row)
-    {
-        echo '.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo '.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo '#line_legendary_'.$line_row_index.' {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
-        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
-        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_stop.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
-        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
-        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .stop_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
-    }
-?>
-
-    .stop_name_container.junction_stop_name_container
-    {
-        margin-left:-2.5em;
-        color: black;
-        font-size: <?=$junction_stop_name_font_size?>em;
-        font-weight: bold;
-    }
-    .stop_name_container.junction_stop_name_container .stop_name
-    {
-        width: 5em;
     }
     .stop_description_container
     {
@@ -441,9 +418,8 @@
         display: block;
         width: <?=$stop_description_container_width?>em;
         position: relative;
-        padding: 0.5em 1em;
+        padding: 0.5em 1em 2em;
 
-        color: rgb(11,134,67);
         background: #ffffff;
 
         border: 2px solid #cccccc;
@@ -488,20 +464,36 @@
         font-size: 1.2em;
         font-weight: bold;
     }
-
     .stop_description_content > *
     {
         margin: 0 0 0.5em 0;
+    }
+    .stop_description_cta
+    {
+        display: block;
+        width: 100%;
+        position: absolute;
+        left: 0;
+        bottom: 0.6em;
+    }
+    .stop_description_cta > a
+    {
+        display: block;
+        width: 100%;
+        padding: 0.2em 0;
+
+        color: #ffffff;
+        text-align: center;
     }
 
     .line_info_container
     {
         display: block;
-        width: 18em;
-        height: 30em;
+        width: 16em;
+        height: 16em;
         position: absolute;
         padding: 0.8em 1em;
-        bottom: 0;
+        bottom: 15em;
         right: 0;
 
         background: #ffffff;
@@ -549,6 +541,34 @@
         background-size: cover;
 
         z-index: 300;
+    }
+
+<?php
+    foreach($line_set as $line_row_index=>$line_row)
+    {
+        echo '.line_'.$line_row_index.'.line_name_container {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.line_'.$line_row_index.'.stop_name_container {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.line_'.$line_row_index.' .stop_description {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.line_'.$line_row_index.' .stop_description_cta {background: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '#line_legendary_'.$line_row_index.' {color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '#line_info_container_'.$line_row_index.' {border-color: rgb('.implode(',',$line_row['color']).');}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_'.$line_row_index.' {opacity: 1;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_stop.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .line_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
+        echo '.svg_drawing_container_animation_active.line_active_'.$line_row_index.' .stop_name_container.line_'.$line_row_index.' {cursor: pointer;}'.PHP_EOL;
+    }
+?>
+
+    .stop_name_container.junction_stop_name_container
+    {
+        margin-left:-2.5em;
+        color: black;
+        font-size: <?=$junction_stop_name_font_size?>em;
+        font-weight: bold;
+    }
+    .stop_name_container.junction_stop_name_container .stop_name
+    {
+        width: 5em;
     }
 </style>
 <!--<svg width="1800" height="1500" xmlns="http://www.w3.org/2000/svg" fill="transparent">-->
@@ -633,7 +653,7 @@
     {
         if (!empty($stop_row['name']))
         {
-            echo PHP_EOL.'<div id="stop_description_container_'.$stop_row['id'].'" class="stop_description_container line_'.$stop_row['line_id'].'" style="'.$stop_row['description_location'].'"><div class="stop_description"><div class="stop_description_title">'.$stop_row['name'].'</div><div class="stop_description_content">'.$stop_row['description'].'</div></div></div>'.PHP_EOL;
+            echo PHP_EOL.'<div id="stop_description_container_'.$stop_row['id'].'" class="stop_description_container line_'.$stop_row['line_id'].'" style="'.$stop_row['description_location'].'"><div class="stop_description"><div class="stop_description_title">'.$stop_row['name'].'</div><div class="stop_description_content">'.$stop_row['description'].'</div><div class="stop_description_cta"><a href="#">Contact us regarding this solution.</a></div></div></div>'.PHP_EOL;
         }
     }
 ?>
